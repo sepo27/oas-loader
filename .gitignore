@@ -1,0 +1,13 @@
+# Common
+.idea
+*.log
+npm-debug.log*
+*.lock
+.env
+*.bak
+*.tgz
+
+# Project
+node_modules
+dist
+.sandbox
