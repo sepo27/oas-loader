@@ -2,8 +2,7 @@
   "name": "oas-loader",
   "version": "0.0.3",
   "description": "Open API spec webpack loader",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
   "scripts": {
     "compile": "tsc -p tsconfig.json",
     "compile:publish": "tsc -p tsconfig-publish.json",
