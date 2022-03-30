@@ -1,3 +1,3 @@
 import { oasWebpackLoader } from './oasWebpackLoader';
 
-export { oasWebpackLoader };
+export default oasWebpackLoader;
