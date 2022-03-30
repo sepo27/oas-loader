@@ -55,13 +55,10 @@ fi
 
 # Dry compile
 
-# TODO: only dry-compile commited files ?
-
 if grepTypes "ts|tsx";
 then
   infom "Dry compiling..."
 
-#  ./node_modules/.bin/tsc --noEmit `diff | grep -P "\.(ts|tsx)$"` || exit 1
   ./node_modules/.bin/tsc -p ./tsconfig.json --noEmit || exit 1
 
   println "done."
