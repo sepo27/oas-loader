@@ -3,10 +3,10 @@ import * as fs from 'fs-extra';
 import * as glob from 'glob';
 import * as deepMerge from 'deepmerge';
 import { getOptions } from 'loader-utils';
-import { makeJsonModuleExports, parseJsonModuleExports } from '../lib/moduleExports';
+import { makeJsonModuleExports, parseJsonModuleExports } from './lib/moduleExports';
 import { OAS_PARAMETERS_DEFAULT_DIR_NAME, OAS_PATHS_DEFAULT_DIR_NAME, OAS_SCHEMAS_DEFAULT_DIR_NAME } from './constants';
 import { makeOasDefaultGlob } from './makeOasDefaultGlob';
-import { readYamlFile } from '../lib/readYmlFile';
+import { readYamlFile } from './lib/readYmlFile';
 
 export function oasWebpackLoader(source) {
   // Input

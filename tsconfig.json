@@ -9,7 +9,7 @@
   },
   "include": [
     "src",
-    "lib"
+    "src/lib"
   ],
   "exclude": [
     "node_modules",
