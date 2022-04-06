@@ -41,6 +41,10 @@ export function oasWebpackLoader(source) {
     loadInfoVersionFromPackageJson(spec, options.infoVersionFromPackageJson);
   }
 
+  // Traverse spec to exclude some properties (if specified)
+
+  excludePropertiesInPaths(spec);
+
   return makeJsonModuleExports(spec);
 }
 
@@ -127,4 +131,70 @@ function loadInfoVersionFromPackageJson(spec, packageJsonPath) {
       spec.info.version = packageJson.version;
     }
   }
+}
+
+function excludePropertiesInPaths(spec) {
+  if (spec.paths) {
+    // eslint-disable-next-line no-param-reassign
+    spec.paths = mapObjectsRecursive(spec.paths, (key, obj) => {
+      if (obj.allOf) {
+        const
+          refObj = obj.allOf.find(o => o.$ref),
+          excludePropsObj = obj.allOf.find(o => o.$excludeProperties);
+
+        if (refObj && excludePropsObj) {
+          const refSchema = findSpecSchemaByRef(spec, refObj.$ref);
+
+          if (refSchema && refSchema.type === 'object' && refSchema.properties) {
+            const nextSchemaProps = Object.keys(refSchema.properties).reduce(
+              (acc, propName) => (
+                excludePropsObj.$excludeProperties.indexOf(propName) > -1
+                  ? acc
+                  : Object.assign(acc, { [propName]: refSchema.properties[propName] })
+              ),
+              {},
+            );
+
+            return {
+              ...refSchema,
+              properties: nextSchemaProps,
+            };
+          }
+        }
+      }
+
+      return obj;
+    });
+  }
+}
+
+function mapObjectsRecursive(input, mapper) {
+  if (typeof input === 'object' && !Array.isArray(input)) {
+    return Object.keys(input).reduce(
+      (acc, key) => {
+        const
+          val = input[key],
+          nextVal = mapper(key, val),
+          retVal = nextVal === val
+            ? mapObjectsRecursive(val, mapper)
+            : nextVal;
+
+        return Object.assign(acc, { [key]: retVal });
+      },
+      {},
+    );
+  }
+
+  return input;
+}
+
+function findSpecSchemaByRef(spec, ref) {
+  if (ref.indexOf('#/components/schemas') === 0) {
+    const schemaName = ref.split('/')[3];
+
+    if (spec.components.schemas[schemaName]) {
+      return spec.components.schemas[schemaName];
+    }
+  }
+  return null;
 }
