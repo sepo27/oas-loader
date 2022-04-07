@@ -14,56 +14,67 @@ import {
 import { makeOasDefaultGlob } from './makeOasDefaultGlob';
 import { readYamlFile } from './lib/readYmlFile';
 import { applyCustomSpecObjects } from './applyCustomSpecObjects';
+import { LooseObject, OasLoaderOptions } from './types';
 
 export function oasWebpackLoader(source) {
-  // Input
-
   let spec = parseJsonModuleExports(source);
 
   const
     specPath = this.resourcePath,
     options = getOptions(this);
 
+  spec = buildOasSpec.call(this, { spec, specPath, options });
+
+  return makeJsonModuleExports(spec);
+}
+
+interface BuildOasSpecParams {
+  spec: LooseObject,
+  specPath: string,
+  options: OasLoaderOptions,
+}
+
+export function buildOasSpec({ spec, specPath, options }: BuildOasSpecParams) {
+  const nextSpec = { ...spec };
+
   // Load paths
 
   const paths = loadPaths.call(this, specPath, options);
   if (paths) {
-    spec.paths = paths;
+    nextSpec.paths = paths;
   }
 
   // Load components
 
   const schemas = loadSchemas.call(this, specPath, options);
   if (schemas) {
-    setSpecComponentsProp(spec, 'schemas', schemas);
+    setSpecComponentsProp(nextSpec, 'schemas', schemas);
   }
 
   const params = loadParams.call(this, specPath, options);
   if (params) {
-    setSpecComponentsProp(spec, 'parameters', params);
+    setSpecComponentsProp(nextSpec, 'parameters', params);
   }
 
   const requests = loadRequests.call(this, specPath, options);
   if (requests) {
-    setSpecComponentsProp(spec, 'requestBodies', requests);
+    setSpecComponentsProp(nextSpec, 'requestBodies', requests);
   }
 
   const responses = loadResponses.call(this, specPath, options);
   if (responses) {
-    setSpecComponentsProp(spec, 'responses', responses);
+    setSpecComponentsProp(nextSpec, 'responses', responses);
   }
 
   // Load info version from package json
 
   if (options.infoVersionFromPackageJson) {
-    loadInfoVersionFromPackageJson(spec, options.infoVersionFromPackageJson);
+    loadInfoVersionFromPackageJson(nextSpec, options.infoVersionFromPackageJson);
   }
 
   // Traverse spec recursively to apply custom objects
 
-  spec = applyCustomSpecObjects(spec);
-
-  return makeJsonModuleExports(spec);
+  return applyCustomSpecObjects(nextSpec);
 }
 
 /*** Lib ***/
