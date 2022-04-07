@@ -25,6 +25,7 @@
   "homepage": "https://github.com/sepo27/oas-loader#readme",
   "devDependencies": {
     "@libj/tbench": "0.0.17",
+    "@types/deepmerge": "^2.2.0",
     "@types/jest": "^27.0.2",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
