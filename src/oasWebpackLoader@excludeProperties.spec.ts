@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as ReadYamlFileModule from './lib/readYmlFile';
 import { makeJsonModuleExports, parseJsonModuleExports } from './lib/moduleExports';
 import { oasWebpackLoader } from './oasWebpackLoader';
-import { OAS_PATHS_DEFAULT_DIR_NAME, OAS_SCHEMAS_DEFAULT_DIR_NAME } from './constants';
+import { OAS_PATHS_DEFAULT_DIR_NAME, OAS_RESPONSES_DEFAULT_DIR_NAME, OAS_SCHEMAS_DEFAULT_DIR_NAME } from './constants';
 import { makeOasDefaultGlob } from './makeOasDefaultGlob';
 
 describe('oasWebpackLoader()', () => {
@@ -92,6 +92,64 @@ describe('oasWebpackLoader()', () => {
                     },
                   },
                 },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('ables to exclude properties from re-used object schema in responses with allOf', () => {
+    const
+      specPath = '/spec/spec.yml',
+      schemasDir = path.join('/spec', OAS_SCHEMAS_DEFAULT_DIR_NAME),
+      respDir = path.join('/spec', OAS_RESPONSES_DEFAULT_DIR_NAME);
+
+    mockSpecFiles(makeOasDefaultGlob(schemasDir), {
+      '/spec/schemas/foo.spec.yml': {
+        Foo: {
+          type: 'object',
+          properties: {
+            abc: 'string',
+            xyz: 'string',
+          },
+        },
+      },
+    });
+
+    mockSpecFiles(makeOasDefaultGlob(respDir), {
+      [path.join(respDir, 'MyResp.yml')]: {
+        MyResp: {
+          content: {
+            'application/json': {
+              schema: {
+                allOf: [
+                  { $ref: '#/components/schemas/Foo' },
+                  {
+                    $excludeProperties: ['abc'],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const res = callLoader({
+      thisArg: { resourcePath: specPath },
+      options: { schemas: true, responses: true },
+    });
+
+    expectSpecAtPath(res, ['components', 'responses']).toEqual({
+      MyResp: {
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                xyz: 'string',
               },
             },
           },

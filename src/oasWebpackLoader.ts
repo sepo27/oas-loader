@@ -7,7 +7,8 @@ import { makeJsonModuleExports, parseJsonModuleExports } from './lib/moduleExpor
 import {
   OAS_PARAMETERS_DEFAULT_DIR_NAME,
   OAS_PATHS_DEFAULT_DIR_NAME,
-  OAS_REQUESTS_DEFAULT_DIR_NAME, OAS_RESPONSES_DEFAULT_DIR_NAME,
+  OAS_REQUESTS_DEFAULT_DIR_NAME,
+  OAS_RESPONSES_DEFAULT_DIR_NAME,
   OAS_SCHEMAS_DEFAULT_DIR_NAME,
 } from './constants';
 import { makeOasDefaultGlob } from './makeOasDefaultGlob';
@@ -16,8 +17,9 @@ import { readYamlFile } from './lib/readYmlFile';
 export function oasWebpackLoader(source) {
   // Input
 
+  let spec = parseJsonModuleExports(source);
+
   const
-    spec = parseJsonModuleExports(source),
     specPath = this.resourcePath,
     options = getOptions(this);
 
@@ -50,15 +52,16 @@ export function oasWebpackLoader(source) {
     setSpecComponentsProp(spec, 'responses', responses);
   }
 
-  // Traverse spec to exclude some properties (if specified)
-
-  excludePropertiesInPaths(spec);
-
   // Load info version from package json
 
   if (options.infoVersionFromPackageJson) {
     loadInfoVersionFromPackageJson(spec, options.infoVersionFromPackageJson);
   }
+
+  // Traverse spec recursively to exclude properties
+
+  spec = excludeProperties(spec);
+  // excludePropertiesInPaths(spec);
 
   return makeJsonModuleExports(spec);
 }
@@ -172,39 +175,36 @@ function loadInfoVersionFromPackageJson(spec, packageJsonPath) {
   }
 }
 
-function excludePropertiesInPaths(spec) {
-  if (spec.paths) {
-    // eslint-disable-next-line no-param-reassign
-    spec.paths = mapObjectsRecursive(spec.paths, (key, obj) => {
-      if (obj.allOf) {
-        const
-          refObj = obj.allOf.find(o => o.$ref),
-          excludePropsObj = obj.allOf.find(o => o.$excludeProperties);
+function excludeProperties(spec) {
+  return mapObjectsRecursive(spec, (key, obj) => {
+    if (obj.allOf) {
+      const
+        refObj = obj.allOf.find(o => o.$ref),
+        excludePropsObj = obj.allOf.find(o => o.$excludeProperties);
 
-        if (refObj && excludePropsObj) {
-          const refSchema = findSpecSchemaByRef(spec, refObj.$ref);
+      if (refObj && excludePropsObj) {
+        const refSchema = findSpecSchemaByRef(spec, refObj.$ref);
 
-          if (refSchema && refSchema.type === 'object' && refSchema.properties) {
-            const nextSchemaProps = Object.keys(refSchema.properties).reduce(
-              (acc, propName) => (
-                excludePropsObj.$excludeProperties.indexOf(propName) > -1
-                  ? acc
-                  : Object.assign(acc, { [propName]: refSchema.properties[propName] })
-              ),
-              {},
-            );
+        if (refSchema && refSchema.type === 'object' && refSchema.properties) {
+          const nextSchemaProps = Object.keys(refSchema.properties).reduce(
+            (acc, propName) => (
+              excludePropsObj.$excludeProperties.indexOf(propName) > -1
+                ? acc
+                : Object.assign(acc, { [propName]: refSchema.properties[propName] })
+            ),
+            {},
+          );
 
-            return {
-              ...refSchema,
-              properties: nextSchemaProps,
-            };
-          }
+          return {
+            ...refSchema,
+            properties: nextSchemaProps,
+          };
         }
       }
+    }
 
-      return obj;
-    });
-  }
+    return obj;
+  });
 }
 
 function mapObjectsRecursive(input, mapper) {
