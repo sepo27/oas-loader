@@ -2,11 +2,15 @@ import * as sinonLib from 'sinon';
 import { ModuleMock } from '@libj/tbench';
 import * as deepMerge from 'deepmerge';
 import * as path from 'path';
-import * as ReadYamlFileModule from './lib/readYmlFile';
-import { makeJsonModuleExports, parseJsonModuleExports } from './lib/moduleExports';
-import { oasWebpackLoader } from './oasWebpackLoader';
-import { OAS_PATHS_DEFAULT_DIR_NAME, OAS_RESPONSES_DEFAULT_DIR_NAME, OAS_SCHEMAS_DEFAULT_DIR_NAME } from './constants';
-import { makeOasDefaultGlob } from './makeOasDefaultGlob';
+import * as ReadYamlFileModule from '../src/lib/readYmlFile';
+import { makeJsonModuleExports, parseJsonModuleExports } from '../src/lib/moduleExports';
+import { oasWebpackLoader } from '../src/oasWebpackLoader';
+import {
+  OAS_PATHS_DEFAULT_DIR_NAME,
+  OAS_RESPONSES_DEFAULT_DIR_NAME,
+  OAS_SCHEMAS_DEFAULT_DIR_NAME,
+} from '../src/constants';
+import { makeOasDefaultGlob } from '../src/makeOasDefaultGlob';
 
 describe('oasWebpackLoader()', () => {
   let
