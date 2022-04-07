@@ -8,7 +8,7 @@ import { oasWebpackLoader } from './oasWebpackLoader';
 import {
   OAS_PARAMETERS_DEFAULT_DIR_NAME,
   OAS_PATHS_DEFAULT_DIR_NAME,
-  OAS_REQUESTS_DEFAULT_DIR_NAME,
+  OAS_REQUESTS_DEFAULT_DIR_NAME, OAS_RESPONSES_DEFAULT_DIR_NAME,
   OAS_SCHEMAS_DEFAULT_DIR_NAME,
 } from './constants';
 import { makeOasDefaultGlob } from './makeOasDefaultGlob';
@@ -484,6 +484,113 @@ describe('oasWebpackLoader()', () => {
       reqDir = path.join('/spec', OAS_REQUESTS_DEFAULT_DIR_NAME);
 
     mockSpecFiles(makeOasDefaultGlob(reqDir), {
+      '/spec/requests/xyz.spec.yml': {
+        Xyz: { type: 'integer' },
+      },
+    });
+
+    const res = callLoader({
+      thisArg: { resourcePath: specPath },
+    });
+
+    expectSpec(res).not.toHaveProperty('components');
+  });
+
+  it('loads responses from default folder', () => {
+    const
+      specPath = '/spec/spec.yml',
+      resDir = path.join('/spec', OAS_RESPONSES_DEFAULT_DIR_NAME);
+
+    mockSpecFiles(makeOasDefaultGlob(resDir), {
+      [path.join(resDir, 'foo.yml')]: {
+        Foo: {
+          description: 'Foo',
+        },
+      },
+      [path.join(resDir, 'bar.yml')]: {
+        Bar: {
+          description: 'Bar',
+        },
+      },
+    });
+
+    const res = callLoader({
+      thisArg: { resourcePath: specPath },
+      options: { responses: true },
+    });
+
+    expectSpec(res).toMatchObject({
+      components: {
+        responses: {
+          Foo: { description: 'Foo' },
+          Bar: { description: 'Bar' },
+        },
+      },
+    });
+  });
+
+  it('loads responses with custom responsesGlob option', () => {
+    const resGlob = '/responses/*.req.yml';
+
+    mockSpecFiles(resGlob, {
+      '/responses/xyz.req.yml': {
+        Xyz: { description: 'Xyz' },
+      },
+      '/responses/abc.req.yml': {
+        Abc: { description: 'Abc' },
+      },
+    });
+
+    const res = callLoader({
+      options: {
+        responses: true,
+        responsesGlob: resGlob,
+      },
+    });
+
+    expectSpec(res).toMatchObject({
+      components: {
+        responses: {
+          Xyz: { description: 'Xyz' },
+          Abc: { description: 'Abc' },
+        },
+      },
+    });
+  });
+
+  it('adds responses bodies specs to watch list', () => {
+    const resGlob = '/responses/**/*.req.yml';
+
+    mockSpecFiles(resGlob, {
+      '/responses/foo.req.yml': {},
+      '/responses/bar.req.yml': {},
+    });
+
+    const thisArg = {
+      addDependency() {},
+    };
+
+    const addDepMock = sinon.stub(thisArg, 'addDependency');
+
+    callLoader({
+      thisArg,
+      options: {
+        responses: true,
+        responsesGlob: resGlob,
+      },
+    });
+
+    expect(addDepMock.callCount).toBe(2);
+    expect(addDepMock.getCall(0).args).toEqual(['/responses/foo.req.yml']);
+    expect(addDepMock.getCall(1).args).toEqual(['/responses/bar.req.yml']);
+  });
+
+  it('does not load responses if disabled', () => {
+    const
+      specPath = '/spec/spec.yml',
+      resDir = path.join('/spec', OAS_RESPONSES_DEFAULT_DIR_NAME);
+
+    mockSpecFiles(makeOasDefaultGlob(resDir), {
       '/spec/requests/xyz.spec.yml': {
         Xyz: { type: 'integer' },
       },

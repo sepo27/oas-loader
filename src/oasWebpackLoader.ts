@@ -7,7 +7,7 @@ import { makeJsonModuleExports, parseJsonModuleExports } from './lib/moduleExpor
 import {
   OAS_PARAMETERS_DEFAULT_DIR_NAME,
   OAS_PATHS_DEFAULT_DIR_NAME,
-  OAS_REQUESTS_DEFAULT_DIR_NAME,
+  OAS_REQUESTS_DEFAULT_DIR_NAME, OAS_RESPONSES_DEFAULT_DIR_NAME,
   OAS_SCHEMAS_DEFAULT_DIR_NAME,
 } from './constants';
 import { makeOasDefaultGlob } from './makeOasDefaultGlob';
@@ -45,15 +45,20 @@ export function oasWebpackLoader(source) {
     setSpecComponentsProp(spec, 'requestBodies', requests);
   }
 
-  // Load info version from package json
-
-  if (options.infoVersionFromPackageJson) {
-    loadInfoVersionFromPackageJson(spec, options.infoVersionFromPackageJson);
+  const responses = loadResponses.call(this, specPath, options);
+  if (responses) {
+    setSpecComponentsProp(spec, 'responses', responses);
   }
 
   // Traverse spec to exclude some properties (if specified)
 
   excludePropertiesInPaths(spec);
+
+  // Load info version from package json
+
+  if (options.infoVersionFromPackageJson) {
+    loadInfoVersionFromPackageJson(spec, options.infoVersionFromPackageJson);
+  }
 
   return makeJsonModuleExports(spec);
 }
@@ -104,6 +109,18 @@ function loadRequests(specPath, options) {
   return loadSpecFiles.call(this, specPath, {
     defaultDirname: OAS_REQUESTS_DEFAULT_DIR_NAME,
     customGlob: options.requestsGlob,
+    watch: true,
+  });
+}
+
+function loadResponses(specPath, options) {
+  if (!options.responses) {
+    return null;
+  }
+
+  return loadSpecFiles.call(this, specPath, {
+    defaultDirname: OAS_RESPONSES_DEFAULT_DIR_NAME,
+    customGlob: options.responsesGlob,
     watch: true,
   });
 }
