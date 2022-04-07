@@ -1,6 +1,6 @@
 {
   "name": "oas-loader",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Open API spec webpack loader",
   "main": "dist/index.js",
   "scripts": {
