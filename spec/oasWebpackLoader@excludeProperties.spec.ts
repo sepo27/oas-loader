@@ -30,7 +30,7 @@ describe('oasWebpackLoader()', () => {
     sinon.restore();
   });
 
-  it('ables to exclude properties from re-used object schema in paths with allOf', () => {
+  it('excludes properties from re-used object schema in paths with allOf', () => {
     const
       specPath = '/spec/spec.yml',
       schemasDir = path.join('/spec', OAS_SCHEMAS_DEFAULT_DIR_NAME),
@@ -56,16 +56,12 @@ describe('oasWebpackLoader()', () => {
               content: {
                 'application/json': {
                   schema: {
-                    properties: {
-                      bar: {
-                        allOf: [
-                          { $ref: '#/components/schemas/Foo' },
-                          {
-                            $excludeProperties: ['baz'],
-                          },
-                        ],
+                    allOf: [
+                      { $ref: '#/components/schemas/Foo' },
+                      {
+                        $excludeProperties: ['baz'],
                       },
-                    },
+                    ],
                   },
                 },
               },
@@ -87,13 +83,9 @@ describe('oasWebpackLoader()', () => {
             content: {
               'application/json': {
                 schema: {
+                  type: 'object',
                   properties: {
-                    bar: {
-                      type: 'object',
-                      properties: {
-                        bar: 'string',
-                      },
-                    },
+                    bar: 'string',
                   },
                 },
               },
@@ -104,7 +96,7 @@ describe('oasWebpackLoader()', () => {
     });
   });
 
-  it('ables to exclude properties from re-used object schema in responses with allOf', () => {
+  it('excludes properties from re-used object schema in responses with allOf', () => {
     const
       specPath = '/spec/spec.yml',
       schemasDir = path.join('/spec', OAS_SCHEMAS_DEFAULT_DIR_NAME),
@@ -154,6 +146,84 @@ describe('oasWebpackLoader()', () => {
               type: 'object',
               properties: {
                 xyz: 'string',
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('excludes properties from re-used object schema deep property', () => {
+    const
+      specPath = '/spec/spec.yml',
+      schemasDir = path.join('/spec', OAS_SCHEMAS_DEFAULT_DIR_NAME),
+      pathsDir = path.join('/spec', OAS_PATHS_DEFAULT_DIR_NAME);
+
+    mockSpecFiles(makeOasDefaultGlob(schemasDir), {
+      '/spec/schemas/Foo.spec.yml': {
+        Foo: {
+          type: 'object',
+          properties: {
+            bar: { type: 'string' },
+            baz: {
+              type: 'object',
+              properties: {
+                baz: { type: 'string' },
+                abc: { type: 'string' },
+                xyz: { type: 'object', properties: { a: { type: 'string' } } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    mockSpecFiles(makeOasDefaultGlob(pathsDir), {
+      [path.join(pathsDir, 'path.yml')]: {
+        '/path': {
+          get: {
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/Foo' },
+                      { $excludeProperties: ['baz.baz'] },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const res = callLoader({
+      thisArg: { resourcePath: specPath },
+      options: { schemas: true, paths: true },
+    });
+
+    expectSpecAtPath(res, ['paths']).toEqual({
+      '/path': {
+        get: {
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    bar: { type: 'string' },
+                    baz: {
+                      type: 'object',
+                      properties: {
+                        abc: { type: 'string' },
+                        xyz: { type: 'object', properties: { a: { type: 'string' } } },
+                      },
+                    },
+                  },
+                },
               },
             },
           },

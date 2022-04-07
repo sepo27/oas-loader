@@ -1,6 +1,6 @@
 import * as deepMerge from 'deepmerge';
 import { LooseObject } from './types';
-import { mapObjectsRecursive } from './utils/mapObjectsRecursive';
+import { mapReduceObjectRecursive } from './utils/mapReduceObjectRecursive';
 import { findSpecObjByRef } from './utils/findSpecObjByRef';
 
 const appliers = [
@@ -9,7 +9,7 @@ const appliers = [
 ];
 
 export const applyCustomSpecObjects = (spec: LooseObject): LooseObject =>
-  mapObjectsRecursive(spec, obj => {
+  mapReduceObjectRecursive(spec, obj => {
     for (let i = 0; i < appliers.length; i++) {
       const [applied, resObj] = appliers[i](spec, obj);
 
@@ -33,14 +33,12 @@ function applyExcludePropertiesObject(spec, obj) {
       const refSchema = findSpecObjByRef(spec, refObj.$ref);
 
       if (refSchema && refSchema.type === 'object' && refSchema.properties) {
-        const nextSchemaProps = Object.keys(refSchema.properties).reduce(
-          (acc, propName) => (
-            excludePropsObj.$excludeProperties.indexOf(propName) > -1
-              ? acc
-              : Object.assign(acc, { [propName]: refSchema.properties[propName] })
-          ),
-          {},
-        );
+        const
+          excludeList = excludePropsObj.$excludeProperties,
+          nextSchemaProps = mapReduceObjectRecursive(refSchema.properties, (val, _, valPath) => {
+            const propPath = valPath.filter(p => p !== 'properties').join('.');
+            return excludeList.indexOf(propPath) === -1 ? val : undefined;
+          });
 
         return [true, {
           ...refSchema,
