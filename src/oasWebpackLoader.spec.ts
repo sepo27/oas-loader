@@ -5,7 +5,12 @@ import * as path from 'path';
 import * as ReadYamlFileModule from './lib/readYmlFile';
 import { makeJsonModuleExports, parseJsonModuleExports } from './lib/moduleExports';
 import { oasWebpackLoader } from './oasWebpackLoader';
-import { OAS_PARAMETERS_DEFAULT_DIR_NAME, OAS_PATHS_DEFAULT_DIR_NAME, OAS_SCHEMAS_DEFAULT_DIR_NAME } from './constants';
+import {
+  OAS_PARAMETERS_DEFAULT_DIR_NAME,
+  OAS_PATHS_DEFAULT_DIR_NAME,
+  OAS_REQUESTS_DEFAULT_DIR_NAME,
+  OAS_SCHEMAS_DEFAULT_DIR_NAME,
+} from './constants';
 import { makeOasDefaultGlob } from './makeOasDefaultGlob';
 
 describe('oasWebpackLoader()', () => {
@@ -382,6 +387,113 @@ describe('oasWebpackLoader()', () => {
     });
 
     expectSpec(res).toMatchObject({ info: { version } });
+  });
+
+  it('loads request bodies from default folder', () => {
+    const
+      specPath = '/spec/spec.yml',
+      reqDirs = path.join('/spec', OAS_REQUESTS_DEFAULT_DIR_NAME);
+
+    mockSpecFiles(makeOasDefaultGlob(reqDirs), {
+      [path.join(reqDirs, 'foo.yml')]: {
+        Foo: {
+          description: 'Foo',
+        },
+      },
+      [path.join(reqDirs, 'bar.yml')]: {
+        Bar: {
+          description: 'Bar',
+        },
+      },
+    });
+
+    const res = callLoader({
+      thisArg: { resourcePath: specPath },
+      options: { requests: true },
+    });
+
+    expectSpec(res).toMatchObject({
+      components: {
+        requestBodies: {
+          Foo: { description: 'Foo' },
+          Bar: { description: 'Bar' },
+        },
+      },
+    });
+  });
+
+  it('loads request bodies with custom requestsGlob option', () => {
+    const requestsGlob = '/requests/*.req.yml';
+
+    mockSpecFiles(requestsGlob, {
+      '/requests/xyz.req.yml': {
+        Xyz: { description: 'Xyz' },
+      },
+      '/requests/abc.req.yml': {
+        Abc: { description: 'Abc' },
+      },
+    });
+
+    const res = callLoader({
+      options: {
+        requests: true,
+        requestsGlob,
+      },
+    });
+
+    expectSpec(res).toMatchObject({
+      components: {
+        requestBodies: {
+          Xyz: { description: 'Xyz' },
+          Abc: { description: 'Abc' },
+        },
+      },
+    });
+  });
+
+  it('adds request bodies specs to watch list', () => {
+    const requestsGlob = '/requests/**/*.req.yml';
+
+    mockSpecFiles(requestsGlob, {
+      '/requests/foo.req.yml': {},
+      '/requests/bar.req.yml': {},
+    });
+
+    const thisArg = {
+      addDependency() {},
+    };
+
+    const addDepMock = sinon.stub(thisArg, 'addDependency');
+
+    callLoader({
+      thisArg,
+      options: {
+        requests: true,
+        requestsGlob,
+      },
+    });
+
+    expect(addDepMock.callCount).toBe(2);
+    expect(addDepMock.getCall(0).args).toEqual(['/requests/foo.req.yml']);
+    expect(addDepMock.getCall(1).args).toEqual(['/requests/bar.req.yml']);
+  });
+
+  it('does not load request bodies if disabled', () => {
+    const
+      specPath = '/spec/spec.yml',
+      reqDir = path.join('/spec', OAS_REQUESTS_DEFAULT_DIR_NAME);
+
+    mockSpecFiles(makeOasDefaultGlob(reqDir), {
+      '/spec/requests/xyz.spec.yml': {
+        Xyz: { type: 'integer' },
+      },
+    });
+
+    const res = callLoader({
+      thisArg: { resourcePath: specPath },
+    });
+
+    expectSpec(res).not.toHaveProperty('components');
   });
 
   /*** Lib ***/

@@ -4,7 +4,12 @@ import * as glob from 'glob';
 import * as deepMerge from 'deepmerge';
 import { getOptions } from 'loader-utils';
 import { makeJsonModuleExports, parseJsonModuleExports } from './lib/moduleExports';
-import { OAS_PARAMETERS_DEFAULT_DIR_NAME, OAS_PATHS_DEFAULT_DIR_NAME, OAS_SCHEMAS_DEFAULT_DIR_NAME } from './constants';
+import {
+  OAS_PARAMETERS_DEFAULT_DIR_NAME,
+  OAS_PATHS_DEFAULT_DIR_NAME,
+  OAS_REQUESTS_DEFAULT_DIR_NAME,
+  OAS_SCHEMAS_DEFAULT_DIR_NAME,
+} from './constants';
 import { makeOasDefaultGlob } from './makeOasDefaultGlob';
 import { readYamlFile } from './lib/readYmlFile';
 
@@ -23,7 +28,7 @@ export function oasWebpackLoader(source) {
     spec.paths = paths;
   }
 
-  // Load components schemas
+  // Load components
 
   const schemas = loadSchemas.call(this, specPath, options);
   if (schemas) {
@@ -33,6 +38,11 @@ export function oasWebpackLoader(source) {
   const params = loadParams.call(this, specPath, options);
   if (params) {
     setSpecComponentsProp(spec, 'parameters', params);
+  }
+
+  const requests = loadRequests.call(this, specPath, options);
+  if (requests) {
+    setSpecComponentsProp(spec, 'requestBodies', requests);
   }
 
   // Load info version from package json
@@ -82,6 +92,18 @@ function loadParams(specPath, options) {
   return loadSpecFiles.call(this, specPath, {
     defaultDirname: OAS_PARAMETERS_DEFAULT_DIR_NAME,
     customGlob: options.paramsGlob,
+    watch: true,
+  });
+}
+
+function loadRequests(specPath, options) {
+  if (!options.requests) {
+    return null;
+  }
+
+  return loadSpecFiles.call(this, specPath, {
+    defaultDirname: OAS_REQUESTS_DEFAULT_DIR_NAME,
+    customGlob: options.requestsGlob,
     watch: true,
   });
 }
