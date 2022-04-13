@@ -260,7 +260,7 @@ describe('oasWebpackLoader()', () => {
                   schema: {
                     allOf: [
                       { $ref: '#/components/schemas/Abc' },
-                      { $excludeProperties: ['zyx', 'baz'] },
+                      { $excludeProperties: ['zyx'] },
                       {
                         title: 'FooReqBody',
                         type: 'object',
@@ -294,7 +294,6 @@ describe('oasWebpackLoader()', () => {
                   type: 'object',
                   properties: {
                     xyz: 'xyz',
-                    foo: 'bar',
                   },
                   title: 'FooReqBody',
                 },
