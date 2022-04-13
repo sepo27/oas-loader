@@ -232,6 +232,80 @@ describe('oasWebpackLoader()', () => {
     });
   });
 
+  it('excludes properties from re-used object schema in path request body with allOf and other schemas', () => {
+    const
+      specPath = '/spec/spec.yml',
+      schemasDir = path.join('/spec', OAS_SCHEMAS_DEFAULT_DIR_NAME),
+      pathsDir = path.join('/spec', OAS_PATHS_DEFAULT_DIR_NAME);
+
+    mockSpecFiles(makeOasDefaultGlob(schemasDir), {
+      '/spec/schemas/abc.spec.yml': {
+        Abc: {
+          type: 'object',
+          properties: {
+            xyz: 'xyz',
+            zyx: 'zyx',
+          },
+        },
+      },
+    });
+
+    mockSpecFiles(makeOasDefaultGlob(pathsDir), {
+      [path.join(pathsDir, 'foo.yml')]: {
+        '/foo': {
+          get: {
+            requestBody: {
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/Abc' },
+                      { $excludeProperties: ['zyx', 'baz'] },
+                      {
+                        title: 'FooReqBody',
+                        type: 'object',
+                        properties: {
+                          foo: 'bar',
+                          baz: 'zab',
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const res = callLoader({
+      thisArg: { resourcePath: specPath },
+      options: { schemas: true, paths: true },
+    });
+
+    expectSpecAtPath(res, ['paths']).toEqual({
+      '/foo': {
+        get: {
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    xyz: 'xyz',
+                    foo: 'bar',
+                  },
+                  title: 'FooReqBody',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
   /*** Lib ***/
 
   const
