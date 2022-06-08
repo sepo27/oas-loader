@@ -1,5 +1,9 @@
 ## Changelog
 
+#### [v0.7.4](https://github.com/sepo27/oas-loader/compare/v0.7.3...v0.7.4) *(8 June 2022)*
+
+- Update version script [`fe4b4d9`](https://github.com/sepo27/oas-loader/commit/fe4b4d91ad2408f857ae95394c02a35db8ad6aee)
+
 #### [v0.7.3](https://github.com/sepo27/oas-loader/compare/v0.7.2...v0.7.3) *(8 June 2022)*
 
 - Update README [`e64cdda`](https://github.com/sepo27/oas-loader/commit/e64cddaabfad3df426da5ceba83a21dd996d3bf5)
