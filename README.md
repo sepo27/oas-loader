@@ -1,4 +1,3 @@
 ## Publish
 - `npm run version <version>`
-- `npm publish`
-- `git push && git push --tags`
+  - (See [npm version](https://docs.npmjs.com/cli/v8/commands/npm-version/) command)
