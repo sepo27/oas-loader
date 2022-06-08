@@ -11,7 +11,8 @@
     "test": "jest -c jest.config.js spec",
     "prepare": "npm run compile:publish && husky install",
     "prepublishOnly": "npm run lint && npm run test",
-    "version": "npm version -m v%s"
+    "version": "auto-changelog -p --template changelog.template.hbs && git add CHANGELOG.md",
+    "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",
